@@ -17,7 +17,7 @@ _last_arxiv_request_at = 0.0
 
 
 def _arxiv_user_agent() -> str:
-    return os.getenv("ARXIV_USER_AGENT", "AI20k-Day04-Research-Agent/1.0 (educational lab; contact: local)")
+    return os.getenv("ARXIV_USER_AGENT", "AI20k-Day03-Research-Agent/1.0 (educational lab; contact: local)")
 
 
 def _rate_limit_arxiv() -> None:

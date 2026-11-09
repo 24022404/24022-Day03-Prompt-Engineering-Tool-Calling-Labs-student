@@ -116,7 +116,7 @@ No API key is required. arXiv is rate-limited, so the tools wait between request
 Setup:
 
 ```bash
-ARXIV_USER_AGENT=AI20k-Day04-Research-Agent/1.0 (your-team-name)
+ARXIV_USER_AGENT=AI20k-Day03-Research-Agent/1.0 (your-team-name)
 ```
 
 Quick tests:

@@ -1,4 +1,4 @@
-# Day 04 Lab v2 Report — Research Agent
+# Day 03 Lab v2 Report — Research Agent
 
 > File này gồm 2 phần, deadline khác nhau:
 > - **PHẦN A — Giới thiệu agent**: ngắn gọn 1 trang để team khác hiểu nhanh agent có tool gì, làm được gì, thử bằng câu hỏi nào. **Xong trước 16:30** để làm tài liệu phụ trợ khi demo. Có thể làm thành poster HTML/SVG (`artifacts/poster.html` / `poster.svg`) để show cho team cùng zone.
