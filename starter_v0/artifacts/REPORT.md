@@ -99,3 +99,29 @@ Only fill if your team did bonus.
 - Which fixes belonged in `tools.yaml`?
 - Which failure needed manual review instead of automatic grading?
 - What would you improve next?
+
+## B7. Small Local Model Challenge (bonus)
+
+Only fill if your team did the local model challenge.
+
+| Version | Model (provider) | Prompt/Tools | case_accuracy | tool_routing | argument | multiturn | Run File |
+|---|---|---|---|---|---|---|---|
+| v3 | (cloud) | v3 |  |  |  |  |  |
+| v3-... | (ollama) | v3 |  |  |  |  |  |
+| v3-... | (ollama) | v3 |  |  |  |  |  |
+| v4-local |  |  |  |  |  |  |  |
+| v5-local |  |  |  |  |  |  |  |
+
+Lỗi đặc thù của model nhỏ (đếm từ run JSON):
+
+| Failure Pattern | Count | Example Case | Fix Tried | Helped? |
+|---|---|---|---|---|
+| wrong / hallucinated tool |  |  |  |  |
+| invalid JSON args (`_invalid_json_arguments`) |  |  |  |  |
+| no tool call / answered directly |  |  |  |  |
+| missed `clarify` |  |  |  |  |
+| repeated / unnecessary calls |  |  |  |  |
+
+- Cái gì giúp model nhỏ gọi tool đúng hơn nhất? Bằng chứng?
+- Bản prompt tối ưu cho local chạy trên model cloud thì sao?
+- Khi nào nhóm sẽ chọn model local thay vì cloud cho agent này?

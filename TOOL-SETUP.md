@@ -30,6 +30,16 @@ cd starter_v0
 python scripts/preflight_provider.py --provider openrouter
 ```
 
+Local model (bonus Small Local Model Challenge, không cần API key):
+
+```bash
+# Cài Ollama: https://ollama.com/download
+ollama pull qwen2.5:7b
+python scripts/preflight_provider.py --provider ollama --model qwen2.5:7b
+```
+
+Tuỳ chọn trong `.env`: `OLLAMA_BASE_URL` (mặc định `http://localhost:11434/v1`), `OLLAMA_MODEL` (mặc định `qwen2.5:7b`).
+
 ## 2. Tavily — `lookup`
 
 - Docs/credits: https://docs.tavily.com/documentation/api-credits

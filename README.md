@@ -32,6 +32,7 @@ Bonus:
 
 - Action tool `send`: có confirmation trước khi gửi.
 - Extra tools: `policy`, `papers`, `paper_text`.
+- **Small Local Model Challenge**: chạy agent bằng model local nhỏ (≤ 8B) qua Ollama — xem [Step 7](#step-7--bonus-challenge-small-local-model).
 
 
 **Điểm thưởng (bonus point):** team nào làm **CẢ HAI** — dựng được UI **và** tự viết thêm hơn 3 tool mới (ngoài các tool có sẵn, kèm `TOOL.md` + đăng ký trong `tools/__init__.py` + `tools.yaml`) — sẽ được cộng điểm thưởng.
@@ -59,7 +60,7 @@ starter_v0/
       TOOL.md                 # frontmatter + notes
       tool.py                 # self-contained implementation
   company_policy/             # local markdown KB for bonus policy tool
-  providers/                  # OpenRouter/OpenAI/Anthropic/Gemini adapters
+  providers/                  # OpenRouter/OpenAI/Anthropic/Gemini/Ollama (local) adapters
   scripts/preflight_provider.py
   samples/                    # mock format examples (transcript, run-analysis, version_log)
 ```
@@ -279,6 +280,61 @@ Hoàn thành `artifacts/REPORT.md`. File này có 2 phần với deadline khác 
 
 **Format Phần A:** nộp tối thiểu bản markdown trong `REPORT.md`. Khuyến khích biến Phần A thành **poster HTML/SVG 1 trang** để show trực tiếp cho team cùng zone (ví dụ `artifacts/poster.html` hoặc `artifacts/poster.svg`) — cùng nội dung, dễ nhìn hơn. Poster HTML/SVG là tùy chọn, không thay thế bản markdown.
 
+## Step 7 — Bonus Challenge: Small Local Model
+
+Câu hỏi: **prompt + tool declaration nhóm vừa tối ưu cho model cloud có còn đúng khi chạy model nhỏ trên máy mình không?** Model nhỏ (3B–8B) chạy offline, không tốn tiền, dữ liệu không rời máy, nhưng gọi tool kém hơn rõ: chọn sai tool, JSON arguments lỗi, bịa tool không có, gọi lặp, hoặc trả lời luôn thay vì gọi `clarify`. Bài này đo khoảng cách đó bằng log thật rồi tìm cách thu hẹp nó.
+
+### Setup
+
+1. Cài [Ollama](https://ollama.com/download) (`brew install ollama` trên macOS), rồi chạy `ollama serve` (app desktop tự chạy sẵn).
+2. Kéo **ít nhất 2** model hỗ trợ tool calling, có kích thước khác nhau:
+
+   ```bash
+   ollama pull qwen2.5:7b      # mặc định của provider, ~4.7 GB
+   ollama pull llama3.2:3b     # nhỏ hơn, ~2 GB
+   # Gợi ý khác: qwen2.5:3b, llama3.1:8b, mistral:7b
+   # Model phải có tag "tools" trên https://ollama.com/search?c=tools
+   ```
+
+   Máy yếu (RAM < 16 GB): dùng model 3B. Không cần API key; provider `ollama` gọi `http://localhost:11434/v1` (đổi bằng `OLLAMA_BASE_URL` nếu dùng LM Studio / llama.cpp server).
+
+3. Preflight:
+
+   ```bash
+   python scripts/preflight_provider.py --provider ollama --model qwen2.5:7b
+   ```
+
+### Nhiệm vụ
+
+1. **Baseline local:** chạy base eval với prompt/tools **v3** (bản tốt nhất của nhóm), không sửa gì, trên từng model local:
+
+   ```bash
+   python run_eval.py --provider ollama --model qwen2.5:7b  --version v3-qwen7b --suite base --eval-cases data/eval_base.json
+   python run_eval.py --provider ollama --model llama3.2:3b --version v3-llama3b --suite base --eval-cases data/eval_base.json
+   ```
+
+2. **Phân loại lỗi:** đọc run JSON, đếm lỗi đặc thù của model nhỏ mà model cloud không mắc:
+   - `wrong_tool` / bịa tên tool không có trong `tools.yaml`
+   - arguments JSON lỗi: provider giữ lại raw text trong `args._invalid_json_arguments`, nên vẫn tính là lỗi arg, không biến thành `provider_error`
+   - không gọi tool (trả text thay vì tool call), hoặc gọi tool khi lẽ ra phải `clarify`
+   - gọi thừa / lặp cùng một tool
+
+3. **Tối ưu cho model nhỏ:** ít nhất **2 vòng** (`v4-local`, `v5-local`), mỗi vòng một giả thuyết, như Step 2. Hướng gợi ý (không bắt buộc):
+   - Rút gọn system prompt; model nhỏ dễ "lạc" với prompt dài.
+   - Viết `description` của tool ngắn, cụ thể, có ví dụ args; bớt field optional.
+   - Thêm 1–2 ví dụ few-shot routing trong prompt.
+   - Bỏ tool không cần cho suite đang chạy để giảm nhiễu lựa chọn.
+
+   Có thể dùng bản prompt/tools riêng cho local qua `--system-prompt` / `--tools` (ví dụ `artifacts/system_prompt_local.md`) để không phá bản v3 của model cloud.
+
+4. **Kiểm tra ngược:** chạy lại bản `v5-local` trên model cloud. Điểm có giảm không? Có tìm được một bản prompt dùng tốt cho cả hai không?
+
+5. Ghi mọi run vào `artifacts/version_log.csv` (ghi rõ model trong cột `reason` hoặc `version`), và điền mục **B7** trong `REPORT.md`.
+
+Lưu ý: model local chậm hơn nhiều (vài giây đến vài chục giây mỗi case). Chạy thử 3–5 case trước bằng một file eval nhỏ nếu máy yếu. Ollama có thể bỏ qua `tool_choice="required"`, nên model local có thể không gọi tool ở case bắt buộc phải gọi; đó là một lỗi cần đo, không phải bug của harness.
+
+**Tiêu chí đạt:** ≥ 2 model local đã chạy base eval, ≥ 2 vòng tối ưu có log, bảng so sánh cloud vs local trong REPORT, và ít nhất một kết luận có bằng chứng về việc "cái gì giúp model nhỏ gọi tool đúng hơn".
+
 ## Submit
 
 Submit `starter_v0/` with:
@@ -293,6 +349,7 @@ Submit `starter_v0/` with:
 - `analysis/*.csv` if you parsed run logs
 - `transcripts/*.transcript.json`
 - code changes if your team added or changed tools/UI
+- nếu làm Small Local Model Challenge: run JSON của model local và prompt/tools riêng cho local (nếu có)
 
 Do not submit `.env` or API keys.
 
