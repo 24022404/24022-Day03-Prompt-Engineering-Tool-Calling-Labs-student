@@ -92,6 +92,9 @@ Only fill if your team did bonus.
 | send (Telegram) |  |  |  |
 | arXiv/company policy |  |  |  |
 | UI |  |  |  |
+| Tool unit tests (`tests/`) | `pytest` output |  |  |
+
+Tool unit tests: số test đã viết, số bug tìm được trong tool có sẵn (nếu có), và một ví dụ lỗi mà unit test bắt được nhưng eval không bắt được.
 
 ## B6. Reflection
 

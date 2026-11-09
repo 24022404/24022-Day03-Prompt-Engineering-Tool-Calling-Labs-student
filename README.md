@@ -23,6 +23,7 @@ Nhiệm vụ bắt buộc:
 - Tối ưu ít nhất 3 vòng sau baseline: `v1`, `v2`, `v3`.
 - Ghi `artifacts/version_log.csv`.
 - Viết thêm ít nhất 1 tool mới (kèm `TOOL.md`, đăng ký trong `tools/__init__.py` và `tools.yaml`).
+- Viết unit test cho tool mới (≥ 3 test/tool) và giữ `pytest` xanh — xem [Step 4b](#step-4b--challenge-viết-test-cho-tool).
 - Tự viết thêm 10 eval case vào `data/eval_group.json`, trong đó 5 single turn và 5 multi turn.
 - Nộp run JSON, transcript JSON, report.
 - Bắt buộc có UI chạy được bằng Streamlit hoặc Vercel.
@@ -37,6 +38,45 @@ Bonus:
 
 **Điểm thưởng (bonus point):** team nào làm **CẢ HAI** — dựng được UI **và** tự viết thêm hơn 3 tool mới (ngoài các tool có sẵn, kèm `TOOL.md` + đăng ký trong `tools/__init__.py` + `tools.yaml`) — sẽ được cộng điểm thưởng.
 
+## TODO Checklist
+
+Đánh dấu khi xong. Mỗi dòng trỏ tới file cần sửa và bằng chứng cần nộp.
+
+**Setup**
+- [ ] `.env` có provider key + `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `RAPIDAPI_KEY`
+- [ ] `python scripts/preflight_provider.py --provider openrouter` pass
+- [ ] `pytest` chạy được: contract test + example test xanh, TODO test đang `skipped`
+
+**Prompt & tool declaration**
+- [ ] Chạy baseline `v0`, ghi vào `artifacts/version_log.csv`
+- [ ] Liệt kê các case FAIL của `v0` và gán mỗi case một loại lỗi (`wrong_tool`, `wrong_arg_value`, `missing_info`...)
+- [ ] `artifacts/system_prompt.md`: bỏ các chỉ dẫn xấu cố ý của starter (đoán thay vì hỏi, gửi không cần xác nhận, ép một bước)
+- [ ] `artifacts/system_prompt.md`: thêm rule routing (khi nào `timeline` / `social_search` / `lookup` / `fetch` / `clarify`)
+- [ ] `artifacts/tools.yaml`: viết lại `description` mỗi tool: làm gì, **khi nào dùng / khi nào không dùng**
+- [ ] `artifacts/tools.yaml`: mô tả rõ convention args (handle không có `@`, `topic=news` cho tin tức, `timeframe`, `search_type=Top|Latest`)
+- [ ] `artifacts/tools.yaml`: `send` mô tả rõ chỉ gửi khi user đã xác nhận (`confirmed=true`)
+- [ ] `v1`, `v2`, `v3`: mỗi version **một** giả thuyết, metric trước/sau trong `version_log.csv`
+
+**Tool mới**
+- [ ] `tools/<tên>/tool.py` + `TOOL.md` (frontmatter đúng contract trong `tools/README.md`)
+- [ ] Đăng ký trong `tools/__init__.py` (`TOOL_FUNCTIONS`) và `artifacts/tools.yaml`
+- [ ] Unit test cho tool mới trong `tests/test_tools_todo.py` (≥ 3 test)
+- [ ] Ít nhất 1 eval case trong `data/eval_group.json` kiểm tra model có route tới tool mới đúng lúc
+
+**Testing**
+- [ ] `data/eval_group.json`: case cho model (routing / args / boundary), xem Step 4
+- [ ] `tests/test_tools_todo.py`: unit test cho code của tool, xem Step 4b
+- [ ] `pytest`: 0 failed, 0 skipped
+
+**Demo & report**
+- [ ] UI chạy được + link dùng thử
+- [ ] `chat.py`: ≥ 3 lượt live, có transcript
+- [ ] `artifacts/REPORT.md` Phần A trước 16:30, Phần B trước khi nộp
+
+**Bonus (tuỳ chọn)**
+- [ ] `send` có xác nhận trước khi gửi, có transcript chứng minh
+- [ ] Small Local Model Challenge (Step 7)
+
 ## Folder Map
 
 ```text
@@ -45,6 +85,12 @@ starter_v0/
   chat.py                     # interactive chat, multi-round tools, transcript JSON
   run_eval.py                 # eval routing + args, writes runs/*.json
   versioning.py               # prompt/tool hash
+  pytest.ini
+  tests/
+    conftest.py               # offline fixtures: block real network, fake_http, clean env
+    test_tool_contract.py     # tools.yaml <-> code <-> eval stay in sync (given, keep green)
+    test_tools_examples.py    # worked examples to copy
+    test_tools_todo.py        # TODO(student): tool unit test challenge
   artifacts/
     system_prompt.md          # student edits
     tools.yaml                # student edits
@@ -227,6 +273,29 @@ python run_eval.py \
   --eval-cases data/eval_research_extension.json
 ```
 
+## Step 4b — Challenge: Viết test cho tool
+
+Eval ở Step 4 đo **model** (chọn tool và args có đúng không). Unit test ở đây đo **code của tool** (nhận args đó thì có chạy đúng không). Hai loại lỗi này khác nhau: model gọi đúng `lookup(topic="news")` nhưng tool quên gửi `topic` lên API thì eval vẫn báo PASS, còn user vẫn nhận kết quả sai.
+
+```bash
+pytest              # toàn bộ suite, offline, không tốn credit API
+pytest -v tests/test_tools_todo.py
+```
+
+Có sẵn:
+
+- `tests/test_tool_contract.py`: kiểm tra `tools.yaml` khớp với code. Mỗi tool khai báo phải có implementation, mọi param khai báo phải có trong signature hàm, có `TOOL.md` đúng tên, eval chỉ dùng tool đã khai báo. Test này phải luôn xanh, chạy lại mỗi khi rename hay thêm tool.
+- `tests/test_tools_examples.py`: 5 mẫu để copy: tool local thuần, guardrail (`send` không gửi khi chưa xác nhận), mock HTTP cho tool gọi API, nhánh lỗi (thiếu key, HTTP 429), và test vòng lặp agent bằng fake provider không cần model.
+- `tests/conftest.py`: mọi HTTP thật đều bị chặn, phải mock bằng fixture `fake_http`. Các env key bị xoá trước mỗi test.
+
+Nhiệm vụ:
+
+1. **Bắt buộc:** viết ≥ 3 test cho mỗi tool mới của nhóm (happy path; input xấu từ model như chuỗi rỗng, sai kiểu, ngoài enum; nhánh lỗi trả error dict chứ không raise).
+2. **Challenge:** điền hết các stub `pytest.skip(TODO)` trong `tests/test_tools_todo.py` (clarify, format, send, lookup, fetch, timeline, social_search, policy). Đạt khi `pytest` báo **0 failed, 0 skipped**.
+3. **Challenge+:** nếu test phát hiện bug trong tool có sẵn, ghi lại bug đó, sửa nó, và giữ lại test đã bắt được bug (regression test). Ghi vào REPORT B5. Gợi ý: thử input biên mà model hay gửi, như `limit=0`, `top_k=0`, số dạng chuỗi (`max_results="5"`), `items` thiếu `url`, rồi tự quyết định hành vi hiện tại có đúng mong đợi không.
+
+Nguyên tắc: một test kiểm tra một hành vi, tên test mô tả hành vi đó (`test_send_without_confirmation_does_not_call_network`), và assert cả **request gửi đi** lẫn **kết quả trả về**.
+
 ## Step 5 — Chat Live
 
 `chat.py` is for live multi-round interaction. It logs every turn to `transcripts/*.transcript.json`.
@@ -345,6 +414,7 @@ Submit `starter_v0/` with:
 - `artifacts/REPORT.md` (Phần A debate poster — xong trước 16:30; Phần B chi tiết — nộp sau)
 - `artifacts/poster.html` hoặc `artifacts/poster.svg` nếu team làm poster để debate (tùy chọn)
 - `data/eval_group.json` with at least 5 team cases
+- `tests/` (unit test cho tool mới; nếu làm challenge thì `test_tools_todo.py` không còn `skip`)
 - `runs/*.json`
 - `analysis/*.csv` if you parsed run logs
 - `transcripts/*.transcript.json`

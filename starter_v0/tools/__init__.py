@@ -35,6 +35,8 @@ TOOL_FUNCTIONS = {
     "policy": search_company_policy,
     "papers": arxiv_search,
     "paper_text": get_arxiv_paper_text,
+    # TODO(student): register your new tool here, e.g. "my_tool": my_tool_function,
+    # then declare it in artifacts/tools.yaml and run `pytest tests/test_tool_contract.py`.
 }
 
 
