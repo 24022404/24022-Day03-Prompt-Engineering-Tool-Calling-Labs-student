@@ -2,6 +2,270 @@
   "dataset_id": "day04_v2_research_group",
   "dataset_role": "group",
   "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
-  "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "allowed_failure_types": [
+    "wrong_tool",
+    "wrong_arg_value",
+    "wrong_boundary",
+    "unnecessary_tool",
+    "out_of_scope",
+    "missing_info"
+  ],
+  "cases": [
+    {
+      "id": "G01_hn_routing",
+      "phase": "B",
+      "suite": "group",
+      "query": "Hacker News đang bàn gì về Rust?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "hn_search",
+            "args": {
+              "query": "Rust"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "Nhắc Hacker News → hn_search (tool mới), không dùng social_search hay lookup."
+      }
+    },
+    {
+      "id": "G02_wiki_background",
+      "phase": "B",
+      "suite": "group",
+      "query": "Retrieval-Augmented Generation là gì? Cho mình kiến thức nền.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "wiki",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "Hỏi định nghĩa/kiến thức nền → wiki (tool mới), không dùng lookup news."
+      }
+    },
+    {
+      "id": "G03_handle_resolve",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tài khoản Twitter của Andrej Karpathy tên là gì?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "handle_resolve",
+            "args": {
+              "name": "Andrej Karpathy"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "Hỏi handle của một người → handle_resolve (tool mới), không gọi timeline."
+      }
+    },
+    {
+      "id": "G04_date_range",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tuần này là từ ngày nào đến ngày nào?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "date_range",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "Hỏi ngày cụ thể của khoảng thời gian → date_range (tool mới)."
+      }
+    },
+    {
+      "id": "G05_out_of_scope_booking",
+      "phase": "B",
+      "suite": "group",
+      "query": "Đặt giúp mình vé máy bay đi Đà Nẵng cuối tuần này.",
+      "failure_type": "out_of_scope",
+      "expect": {
+        "no_tool": true,
+        "behavior": "refuse"
+      },
+      "metadata": {
+        "what_it_tests": "Yêu cầu ngoài phạm vi research (đặt vé) → không gọi tool."
+      }
+    },
+    {
+      "id": "G06_hn_switch_sort",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Hacker News đang bàn gì về Rust?"
+        },
+        {
+          "role": "user",
+          "content": "Lấy bài mới nhất thôi, không cần bài nhiều điểm"
+        },
+        {
+          "role": "user",
+          "content": "Vẫn chủ đề Rust"
+        }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "hn_search",
+            "args": {
+              "query": "Rust",
+              "sort": "latest"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "3 turns: giữ query Rust, đổi sort popular → latest."
+      }
+    },
+    {
+      "id": "G07_clarify_then_wiki",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Giải thích giúp mình khái niệm này với"
+        },
+        {
+          "role": "user",
+          "content": "Mixture of Experts"
+        },
+        {
+          "role": "user",
+          "content": "Chỉ cần kiến thức nền thôi"
+        }
+      ],
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "wiki",
+            "args": {}
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "3 turns: lượt 1 thiếu khái niệm, lượt 2 bổ sung → wiki ở lượt cuối."
+      }
+    },
+    {
+      "id": "G08_confirm_send_after_digest",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tóm tắt tin AI hôm nay giúp mình"
+        },
+        {
+          "role": "user",
+          "content": "Ok, bản tin ổn rồi"
+        },
+        {
+          "role": "user",
+          "content": "Đăng lên kênh Telegram của nhóm nhé"
+        }
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "response_type": "yes_no"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "3 turns: yêu cầu gửi Telegram → phải hỏi xác nhận yes_no, không tự send."
+      }
+    },
+    {
+      "id": "G09_switch_web_to_top_tweets",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tin tức về NVIDIA tuần này trên web"
+        },
+        {
+          "role": "user",
+          "content": "À không, xem tweet về NVIDIA thôi"
+        },
+        {
+          "role": "user",
+          "content": "Lấy các tweet phổ biến nhất nhé"
+        }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "social_search",
+            "args": {
+              "query": "NVIDIA",
+              "search_type": "Top"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "3 turns: đổi nguồn web → Twitter, search_type=Top, giữ chủ đề NVIDIA."
+      }
+    },
+    {
+      "id": "G10_fill_handle_and_limit",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Lấy tweet mới nhất giúp mình"
+        },
+        {
+          "role": "user",
+          "content": "Của Yann LeCun"
+        },
+        {
+          "role": "user",
+          "content": "Lấy 2 tweet thôi"
+        }
+      ],
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "timeline",
+            "args": {
+              "screenname": "ylecun",
+              "limit": 2
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "what_it_tests": "3 turns: thiếu account ở lượt 1, carry tên Yann LeCun → handle ylecun, limit=2."
+      }
+    }
+  ]
 }
