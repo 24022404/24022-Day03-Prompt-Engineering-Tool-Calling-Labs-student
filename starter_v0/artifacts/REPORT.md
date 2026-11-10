@@ -132,17 +132,18 @@ Nhận xét: G03 là **trade-off** của v3 — description mới bảo "ngườ
 
 ## B4. Live Chat Evidence
 
-Chat qua UI Streamlit (`app.py`), version v3, transcript lưu tự động ở `transcripts/v3_ui_openrouter_*.transcript.json`.
+Chat qua UI Streamlit (`app.py`), version v3, 6 lượt live; transcript lưu tự động ở `transcripts/v3_ui_openrouter_*.transcript.json`.
 
 | Turn | User Request | Tool Calls | Version Evidence | Outcome |
 |---|---|---|---|---|
 | 1 | "thời tiết hôm nay ra sao? hôm nay là ngày bao nhiêu?" | `lookup(query="weather date", topic="general", timeframe="day")` → lỗi thiếu `TAVILY_API_KEY` | v3 | ⚠️ Agent hỏi lại địa điểm (đúng) nhưng **bịa ngày "23/10/2026"** sau khi tool lỗi; lẽ ra phải gọi `date_range` hoặc nói không biết |
 | 2 | "https://arxiv.org/list/astro-ph.CO/recent link này nói về gì?" | `fetch(url=...)` → lỗi thiếu `FIRECRAWL_API_KEY` | v3 | ✅ Có link → gọi đúng `fetch`; báo rõ là chưa đọc được trang. ⚠️ Vẫn thêm mô tả chung từ kiến thức sẵn có |
-| 3 | "Hacker News đang bàn gì về Rust?" | `hn_search(query="Rust")` | v3 | (điền sau khi chạy) |
-| 4 | "Tóm tắt 5 tweet mới nhất giúp mình" → "Của Elon Musk" | `clarify(text)` → `timeline(screenname="elonmusk", limit=5)` | v3 | (điền sau khi chạy) |
-| 5 | "Đăng bản tin này lên Telegram giúp mình" | `clarify(response_type="yes_no")` | v3 | (điền sau khi chạy) |
+| 3 | "Hacker News đang bàn gì về Rust?" | `hn_search(query="Rust", sort="popular", limit=5)` → `format(template="bullets", ...)` | v3 | ✅ Tool mới chạy thật (API miễn phí): 5 bài Rust nhiều điểm nhất kèm link, điểm, số bình luận; agent tự gọi tiếp `format` (2 vòng tool) và ghi chú đây là bài nổi bật, không phải thảo luận mới nhất |
+| 4 | "Tóm tắt 5 tweet mới nhất giúp mình" | `clarify(response_type="text", question="Bạn muốn xem 5 tweet mới nhất của tài khoản X/Twitter nào?")` | v3 | ✅ Thiếu tài khoản → hỏi lại, không đoán (khác v0 tự chọn `SamAltman`) |
+| 5 | "Của Elon Musk" | `timeline(screenname="elonmusk", limit=5)` → lỗi thiếu `RAPIDAPI_KEY` | v3 | ✅ Ghép thông tin 2 lượt: đổi tên → handle `elonmusk`, giữ `limit=5` từ lượt trước. Tool lỗi → agent báo thật là chưa lấy được, không bịa tweet |
+| 6 | "Đăng bản tin này lên Telegram giúp mình" | `clarify(response_type="yes_no", question="Bạn xác nhận gửi nội dung này lên Telegram chứ?")` | v3 | ✅ Hành động ghi → xin xác nhận yes/no trước, không gọi `send` |
 
-Bài học từ chat live (eval tự động không bắt được): khi tool trả lỗi, agent có xu hướng **lấp chỗ trống bằng kiến thức của model** (ngày sai, mô tả chung). Cần thêm rule vào prompt: "nếu tool lỗi, nói rõ là không lấy được dữ liệu, không tự bổ sung số liệu/ngày tháng".
+Bài học từ chat live (eval tự động không bắt được): khi tool trả lỗi, agent xử lý **không nhất quán** — lượt 5 báo thật là chưa lấy được tweet, nhưng lượt 1–2 **lấp chỗ trống bằng kiến thức của model** (ngày sai, mô tả chung). Cần thêm rule vào prompt: "nếu tool lỗi, nói rõ là không lấy được dữ liệu, không tự bổ sung số liệu/ngày tháng".
 
 ## B5. Bonus Evidence
 
