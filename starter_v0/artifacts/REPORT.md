@@ -54,10 +54,22 @@ Fill from `artifacts/version_log.csv` and `runs/*.json`.
 
 | Version | Changed Artifact | Hypothesis | Metric Before | Metric After | Run File |
 |---|---|---|---:|---:|---|
-| v0 | baseline |  |  |  |  |
-| v1 |  |  |  |  |  |
+| v0 | baseline | Đo hành vi ban đầu | — | case_accuracy = 0.65 (13/20) | `runs/v0_B_base_openrouter_20261110T095747291783.json` |
+| v1 | `artifacts/system_prompt.md` | Quy định thứ tự ưu tiên clarify giúp hỏi đúng kiểu khi thiếu dữ liệu hoặc chưa xác nhận gửi | case_accuracy = 0.65 | case_accuracy = 0.65 (13/20) | `runs/v1_B_base_openrouter_20261110T104133101896.json` |
 | v2 |  |  |  |  |  |
 | v3 |  |  |  |  |  |
+
+### Kết quả vòng v1
+
+- Log gồm baseline và kết quả v1 đã lưu ở `artifacts/version_log_v1.csv`, vì Windows đang chặn ghi `artifacts/version_log.csv`. Cần đồng bộ vào file chính sau khi ứng dụng đang giữ file nhả quyền ghi. Trong bản log mới, nhãn baseline là `v0` theo run JSON; dòng `v1` giữ tên tác giả đã nhập là `Phan Nhat Truong`.
+- Provider/model: `openrouter` / `cx/gpt-6-luna`, cùng model và tools hash với baseline được ghi trong version log. Cả hai run đo đủ 20 case, không có provider error.
+- Giả thuyết: model cần thứ tự quyết định rõ ràng — yêu cầu xác nhận trước hành động gửi; hỏi dữ liệu còn thiếu; đủ thông tin thì gọi tool đọc mà không hỏi xác nhận thừa.
+- Các case mục tiêu `R10_missing_handle`, `R11_missing_url`, `R12_confirm_before_send`: baseline 0/3, v1 3/3.
+- `tool_routing_accuracy`: 0.85 → 0.95; `argument_accuracy`: 0.65 → 0.65; `multiturn_accuracy`: 0.6667 (4/6) → 0.1667 (1/6).
+- Kết luận: v1 cải thiện hành vi hỏi lại/xác nhận trong ba case mục tiêu, nhưng chưa cải thiện tổng điểm và có hồi quy ở hội thoại nhiều lượt. Một lần chạy chưa đủ để kết luận về độ ổn định.
+- Bảy case còn lỗi: `R03`, `R13`, `M01`, `M02`, `M03`, `M05`, `M06`. Lỗi gồm query chứa thêm từ chỉ tin tức/thời gian, truyền tên hiển thị thay vì handle, và thiếu `social_search` khi yêu cầu cả hai nguồn.
+- Bản chụp prompt và khai báo tool của run này: `artifacts/versions/v1/system_prompt.md`, `artifacts/versions/v1/tools.yaml`. Run v1 cũ được giữ nguyên; kết quả ở bảng trên trỏ tới run mới theo đúng hash.
+- Kiểm tra code: `python -m pytest -q` đạt **62 passed, 17 skipped**. Các test TODO chưa được triển khai trong vòng sửa prompt này.
 
 ## B2. Failure Analysis
 
